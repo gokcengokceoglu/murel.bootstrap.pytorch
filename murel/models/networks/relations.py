@@ -73,7 +73,8 @@ class RelationsModule(nn.Module):
         Rij = Rij.view(bsize, n_regions, n_regions, -1)
 
         if self.agg['type'] == 'max':
-            mm_new, argmax = Rij.max(2) # TODO : Here mm_new = Rij*g_i
+            mm_new, argmax = Rij@g_i
+            # TODO : Here mm_new = Rij*g_i
         else:
             mm_new = getattr(Rij, self.agg['type'])(2)
 
