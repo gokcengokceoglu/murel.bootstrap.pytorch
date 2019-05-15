@@ -13,7 +13,10 @@ from block.models.networks.vqa_net import factory_text_enc
 from block.models.networks.vqa_net import mask_softmax
 from block.models.networks.mlp import MLP
 from .murel_cell import MuRelCell
+<<<<<<< HEAD
 from .itereg_cell import iteregCell
+=======
+>>>>>>> 4866b44dd3ed21010bc118f8ec1d7e0dcf2cda9a
 
 
 class iteReGNet(nn.Module):
@@ -49,9 +52,15 @@ class iteReGNet(nn.Module):
             self.q_att_linear1 = nn.Linear(512, 2)
 
         if self.shared:
+<<<<<<< HEAD
             self.cell = iteregCell(**cell)
         else:
             self.cells = nn.ModuleList([iteregCell(**cell) for i in range(self.n_step)])
+=======
+            self.cell = MuRelCell(**cell)
+        else:
+            self.cells = nn.ModuleList([MuRelCell(**cell) for i in range(self.n_step)])
+>>>>>>> 4866b44dd3ed21010bc118f8ec1d7e0dcf2cda9a
 
         if 'fusion' in self.classif:
             self.classif_module = block.factory_fusion(self.classif['fusion'])
