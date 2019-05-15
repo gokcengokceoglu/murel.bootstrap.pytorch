@@ -11,26 +11,30 @@ from .relations import RelationsModule
 
 class iteregCell(nn.Module):
     def __init__(self,
+                 residual=True,
                  fusion={},
                  relations={},
                  control={},
                  graph={}):
 
+        super(iteregCell, self).__init__()
+
+        self.residual = residual
         self.fusion = fusion
         self.relations = relations
         self.control = control
         self.graph = graph
 
-        self.fuse = block.factory_fusion(self.fusion)
-        self.graph_module = GraphModule(**graph)
-        self.control_module = ControlModule(**control)
+        self.fusion_module = block.factory_fusion(self.fusion)
         self.relations_module = RelationsModule(**relations)
+        self.control_module = ControlModule(**control)
+        self.graph_module = GraphModule(**graph)
 
 
     def forward(self, q, s_i, c_i, coords=None):
 
         # 1. fuse q and s_(i-1) find m_i
-        m_new = self.fusion_module(q, s_i)
+        m_new = self.process_fusion(q, s_i)
 
         # 2. put q and c_(i-1) to recurrent unit, find c_i
         c_new = self.control_module(q, c_i)
@@ -56,15 +60,13 @@ class iteregCell(nn.Module):
         return s_new, c_new
 
 
-
-    def fusion_module(self, q, s):
-        bsize = s.shape[0]
-        n_regions = s.shape[1]
-        s = s.contiguous().view(bsize*n_regions, -1)
-        s = self.fuse([q, s])
-        s = s.view(bsize, n_regions, -1)
-        return s
-
+    def process_fusion(self, q, mm):
+        bsize = mm.shape[0]
+        n_regions = mm.shape[1]
+        mm = mm.contiguous().view(bsize*n_regions, -1)
+        mm = self.fusion_module([q, mm])
+        mm = mm.view(bsize, n_regions, -1)
+        return mm
 
 
 

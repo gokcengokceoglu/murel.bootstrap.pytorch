@@ -9,7 +9,7 @@ dataset:
   eval_split: val # or test
   proc_split: train # or trainval (preprocessing split, must be equal to train_split)
   nb_threads: 4
-  batch_size: 84
+  batch_size: 4
   nans: 3000
   minwcount: 0
   nlp: mcb
@@ -22,7 +22,7 @@ model:
   name: default
   network:
     import: murel.models.networks.factory
-    name: murel_net
+    name: itereg_net
     txt_enc:
       name: skipthoughts
       type: BayesianUniSkip
@@ -43,7 +43,15 @@ model:
         rank: 15
         dropout_input: 0.1
         dropout_pre_lin: 0.
-      pairwise:
+      control:
+        input_size: 2048
+        hidden_size: 256
+      graph:
+        in_feature_dim: 2000
+        combined_feature_dim: 2256
+        K: 36
+        dropout: 1
+      relations:
         residual: True
         fusion_coord:
           type: block

@@ -14,7 +14,9 @@ class ControlModule(nn.Module):
         super(ControlModule, self).__init__()
         self.hidden_size = hidden_size
 
-        self.embedding = nn.Embedding(input_size, hidden_size)
+        embedding = np.random.random((input_size, hidden_size))
+        embedding = np.asarray(embedding, dtype=int)
+        self.embedding = torch.from_numpy(embedding)
         self.gru = nn.GRU(hidden_size, hidden_size)
 
     def forward(self, input, hidden):
@@ -24,4 +26,4 @@ class ControlModule(nn.Module):
         return output, hidden
 
     def initHidden(self):
-        return torch.zeros(1, 1, self.hidden_size, device=device)
+        return torch.zeros(1, 1, self.hidden_size, device='cuda')
