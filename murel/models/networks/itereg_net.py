@@ -13,10 +13,8 @@ from block.models.networks.vqa_net import factory_text_enc
 from block.models.networks.vqa_net import mask_softmax
 from block.models.networks.mlp import MLP
 from .murel_cell import MuRelCell
-<<<<<<< HEAD
 from .itereg_cell import iteregCell
-=======
->>>>>>> 4866b44dd3ed21010bc118f8ec1d7e0dcf2cda9a
+
 
 
 class iteReGNet(nn.Module):
@@ -39,6 +37,11 @@ class iteReGNet(nn.Module):
         self.shared = shared
         self.cell = cell
         self.agg = agg
+        self.c = torch.randn(size=(1, 512), dtype=torch.float)
+        self.c = self.c.cuda()
+        self.c_expand = self.c.expand(4, -1)
+        # self.c_expand = self.c[:, None, :].expand(4, self.c.shape[1])
+        # self.c_expand = self.c_expand.contiguous().view(4, -1)
         assert self.agg['type'] in ['max', 'mean']
         self.classif = classif
         self.wid_to_word = wid_to_word
@@ -52,15 +55,10 @@ class iteReGNet(nn.Module):
             self.q_att_linear1 = nn.Linear(512, 2)
 
         if self.shared:
-<<<<<<< HEAD
             self.cell = iteregCell(**cell)
         else:
             self.cells = nn.ModuleList([iteregCell(**cell) for i in range(self.n_step)])
-=======
-            self.cell = MuRelCell(**cell)
-        else:
-            self.cells = nn.ModuleList([MuRelCell(**cell) for i in range(self.n_step)])
->>>>>>> 4866b44dd3ed21010bc118f8ec1d7e0dcf2cda9a
+
 
         if 'fusion' in self.classif:
             self.classif_module = block.factory_fusion(self.classif['fusion'])
@@ -106,21 +104,25 @@ class iteReGNet(nn.Module):
         v = batch['visual']
         q = batch['question']
         l = batch['lengths'].data
-        c = batch['norm_coord']
+        coord = batch['norm_coord']
 
         q = self.process_question(q, l)
 
         bsize = q.shape[0]
         n_regions = v.shape[1]
 
-        q_expand = q[:,None,:].expand(bsize, n_regions, q.shape[1])
-        q_expand = q_expand.contiguous().view(bsize*n_regions, -1)
+        # q_expand = q[:,None,:].expand(bsize, n_regions, q.shape[1])
+        # q_expand = q_expand.contiguous().view(bsize*n_regions, -1)
+#
+        # c_expand = self.c[:,None,:].expand(bsize, n_regions, self.c.shape[1])
+        # c_expand = c_expand.contiguous().view(bsize * n_regions, -1)
 
         # cell
         mm = v
+        c_exp = self.c_expand
         for i in range(self.n_step):
             cell = self.cell if self.shared else self.cells[i]
-            mm = cell(q_expand, mm, c)
+            mm, c_exp = cell(q, mm, c_exp, coord)
 
             if self.buffer is not None: # for visualization
                 self.buffer[i] = deepcopy(cell.pairwise.buffer)

@@ -33,15 +33,29 @@ class GraphModule(Module):
         self.edge_layer_1 = nn.utils.weight_norm(self.edge_layer_1)
         self.edge_layer_2 = nn.utils.weight_norm(self.edge_layer_2)
 
-    def forward(self, graph_nodes):
+    def forward(self, mm_new, ci):
         '''
         ## Inputs:
+        - mm_new (batch_size, K, in_feat_dim): multimodal features
+        - ci (in_c_dim): control vector
+
         - graph_nodes (batch_size, K, in_feat_dim): input features
         ## Returns:
         - adjacency matrix (batch_size, K, K)
         '''
 
-        graph_nodes = graph_nodes.view(-1, self.in_dim)
+        bsize = mm_new.shape[0]
+        n_regions = mm_new.shape[1]
+
+        mm_new = mm_new.view(-1, mm_new.shape[2])
+
+        c_uns = ci.unsqueeze(dim=1)
+        c_expand = c_uns.expand(bsize, n_regions, c_uns.shape[2])
+        c_expand = c_expand.contiguous().view(-1, c_expand.shape[2])
+
+        graph_nodes = torch.cat((mm_new, c_expand), dim=1)
+
+        # graph_nodes = image_qenc_cat.view(-1, self.in_dim)
 
         # layer 1
         h = self.edge_layer_1(graph_nodes)

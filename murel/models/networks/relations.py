@@ -73,7 +73,11 @@ class RelationsModule(nn.Module):
         Rij = Rij.view(bsize, n_regions, n_regions, -1)
 
         if self.agg['type'] == 'max':
-            mm_new, argmax = Rij@g_i
+            Rij = Rij.permute(3, 0, 1, 2)
+            e_vector = torch.mul(Rij, g_i)
+            mm_new = e_vector.sum(dim=3).permute(1, 2, 0)
+
+            # mm_new, argmax = Rij@g_i
             # TODO : Here mm_new = Rij*g_i
         else:
             mm_new = getattr(Rij, self.agg['type'])(2)
@@ -81,7 +85,7 @@ class RelationsModule(nn.Module):
         if self.buffer is not None:
             self.buffer['mm'] = mm.data.cpu() # bx36x2048
             self.buffer['mm_new'] = mm.data.cpu() # bx36x2048
-            self.buffer['argmax'] = argmax.data.cpu() # bx36x2048
+            # self.buffer['argmax'] = argmax.data.cpu() # bx36x2048
             L1_regions = torch.norm(mm_new.data, 1, 2) # bx36
             L2_regions = torch.norm(mm_new.data, 2, 2) # bx36
             self.buffer['L1_max'] = L1_regions.max(1)[0].cpu() # b

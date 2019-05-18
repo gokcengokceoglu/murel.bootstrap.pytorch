@@ -44,10 +44,10 @@ model:
         dropout_input: 0.1
         dropout_pre_lin: 0.
       control:
-        input_size: 2048
-        hidden_size: 256
+        input_size: 4800
+        hidden_size: 512
       graph:
-        in_feature_dim: 2000
+        in_feature_dim: 2560
         combined_feature_dim: 2256
         K: 36
         dropout: 1
