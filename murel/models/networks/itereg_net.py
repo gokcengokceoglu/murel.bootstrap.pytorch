@@ -37,9 +37,9 @@ class iteReGNet(nn.Module):
         self.shared = shared
         self.cell = cell
         self.agg = agg
-        self.c = torch.randn(size=(1, 512), dtype=torch.float)
-        self.c = self.c.cuda()
-        self.c_expand = self.c.expand(4, -1)
+        self.c_zero = torch.randn(size=(1, 512), dtype=torch.float)
+        self.c_zero = self.c_zero.cuda()
+        self.c_zero = nn.Parameter(self.c_zero)
         # self.c_expand = self.c[:, None, :].expand(4, self.c.shape[1])
         # self.c_expand = self.c_expand.contiguous().view(4, -1)
         assert self.agg['type'] in ['max', 'mean']
@@ -111,15 +111,9 @@ class iteReGNet(nn.Module):
         bsize = q.shape[0]
         n_regions = v.shape[1]
 
-        # q_expand = q[:,None,:].expand(bsize, n_regions, q.shape[1])
-        # q_expand = q_expand.contiguous().view(bsize*n_regions, -1)
-#
-        # c_expand = self.c[:,None,:].expand(bsize, n_regions, self.c.shape[1])
-        # c_expand = c_expand.contiguous().view(bsize * n_regions, -1)
-
         # cell
         mm = v
-        c_exp = self.c_expand
+        c_exp = self.c_zero.repeat(bsize, 1)
         for i in range(self.n_step):
             cell = self.cell if self.shared else self.cells[i]
             mm, c_exp = cell(q, mm, c_exp, coord)
