@@ -1,5 +1,5 @@
 exp:
-  dir: logs/vqa2/attention
+  dir: logs/vqa2/itereg
   resume: # last, best_[...], or empty (from scratch)
 dataset:
   import: murel.datasets.factory
