@@ -1,21 +1,21 @@
 exp:
-  dir: logs/vqa2/itereg
-  resume: # last, best_[...], or empty (from scratch)
+  dir: logs/vqa2/iter2_fixed_no_c
+  resume: last
 dataset:
   import: murel.datasets.factory
-  name: vqa2 # or vqa2vg
+  name: vqa2
   dir: data/vqa/vqa2
   train_split: train
-  eval_split: val # or test
-  proc_split: train # or trainval (preprocessing split, must be equal to train_split)
-  nb_threads: 4
-  batch_size: 8
+  eval_split: val
+  proc_split: train
+  nb_threads: 8
+  batch_size: 20
   nans: 3000
   minwcount: 0
   nlp: mcb
-  samplingans: True
+  samplingans: true
   dir_rcnn: data/vqa/coco/extract_rcnn/2018-04-27_bottom-up-attention_fixed_36
-  vg: False
+  vg: false
   dir_vg: data/vqa/vgenome
   dir_rcnn_vg: data/vqa/vgenome/extract_rcnn/2018-04-27_bottom-up-attention_fixed_36
 model:
@@ -27,70 +27,72 @@ model:
       name: skipthoughts
       type: BayesianUniSkip
       dropout: 0.25
-      fixed_emb: False
+      fixed_emb: True
       dir_st: data/skip-thoughts
     self_q_att: True
-    n_step: 3
-    shared: True
+    n_step: 2
+    shared: true
     cell:
-      residual: True
+      residual: true
       fusion:
         type: block
-        input_dims: [4800, 2048]
+        input_dims:
+        - 4800
+        - 2048
         output_dim: 2048
         mm_dim: 1000
         chunks: 20
         rank: 15
         dropout_input: 0.1
-        dropout_pre_lin: 0.
+        dropout_pre_lin: 0.0
       control:
         input_size: 4800
         hidden_size: 512
       graph:
-        in_feature_dim: 2560
-        combined_feature_dim: 2256
+        in_feature_dim: 2048
+        combined_feature_dim: 720
         K: 36
         dropout: 1
       relations:
-        residual: True
+        residual: true
         fusion_coord:
           type: block
-          input_dims: [4, 4]
+          input_dims:
+          - 4
+          - 4
           output_dim: 2048
           mm_dim: 200
           chunks: 5
           rank: 5
-          dropout_input: 0.
-          dropout_pre_lin: 0.
+          dropout_input: 0.0
+          dropout_pre_lin: 0.0
         fusion_feat:
           type: block
-          input_dims: [2048, 2048]
+          input_dims:
+          - 2048
+          - 2048
           output_dim: 2048
           mm_dim: 200
           chunks: 5
           rank: 5
-          dropout_input: 0.
-          dropout_pre_lin: 0.
+          dropout_input: 0.0
+          dropout_pre_lin: 0.0
         agg:
-          type: max # | mean | weldon
-          # weldon:
-          #   kmax: 2
-          #   kmin: 2
+          type: max
     agg:
-      type: max # | mean | weldon
-      # weldon:
-      #   kmax: 2
-      #   kmin: 2
+      type: max
     classif:
       fusion:
         type: block
-        input_dims: [4800, 2048]
-        output_dim: 3000 #Fixed
+        input_dims:
+        - 4800
+        - 2048
+        output_dim: 3000
         mm_dim: 1600
         chunks: 20
         rank: 10
         dropout_input: 0.1
-        dropout_pre_lin: 0.
+        dropout_pre_lin: 0.0
   criterion:
     import: murel.models.criterions.factory
     name: vqa_cross_entropy
@@ -100,20 +102,26 @@ model:
 optimizer:
   import: murel.optimizers.factory
   name: Adam
-  lr: 0.0003
-  gradual_warmup_steps: [0.5, 2.0, 7.0] #torch.linspace
-  lr_decay_epochs: [14, 24, 2] #range
-  lr_decay_rate: .25
+  lr: 0.0002
+  gradual_warmup_steps:
+  - 0.5
+  - 2.0
+  - 7.0
+  lr_decay_epochs:
+  - 14
+  - 24
+  - 2
+  lr_decay_rate: 0.25
 engine:
   name: logger
-  debug: False
+  debug: false
   print_freq: 10
   nb_epochs: 25
   saving_criteria:
   - eval_epoch.accuracy_top1:max
 misc:
-  logs_name:
-  cuda: True
+  logs_name: null
+  cuda: true
   seed: 1337
 view:
   name: plotly

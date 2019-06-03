@@ -4,10 +4,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import block
-from .pairwise import Pairwise
 from .graph import GraphModule
 from .control import ControlModule
 from .relations import RelationsModule
+
+
 
 class iteregCell(nn.Module):
     def __init__(self,
@@ -40,20 +41,48 @@ class iteregCell(nn.Module):
         q_expand = q_expand.contiguous().view(bsize*n_regions, -1)
         m_new = self.process_fusion(q_expand, s_i)
 
+        check_s_i = torch.isnan(s_i)
+
+        if check_s_i.sum() > 0 :
+            print("NaN is s_i")
+
+
+        check_m_new = torch.isnan(m_new)
+
+        if check_m_new.sum() > 0 :
+            print("NaN is m_new")
+
+
         # 2. put q and c_(i-1) to recurrent unit, find c_i
         c_new = self.control_module(q, c_i)
 
+        check_c_new = torch.isnan(c_new)
+
+        if check_c_new.sum() > 0 :
+            print("NaN is c_new")
+
         # 3. put c_i and m_i to the graph module => g_i = M*M'*c_i
         g_new = self.graph_module(m_new, c_new)
+
+        check_g_new = torch.isnan(g_new)
+
+        if check_g_new.sum() > 0 :
+            print("NaN in g_new")
 
         # 4. put m_i and g_i to relations module =>
             # B(b_i,b_j,W) = r_ij, e_i = sum over j(gi*r_ij)
             # s_i = s_(i-1) + e_i
         e_i = self.relations_module(m_new, g_new, coords)
 
+        check_e_i = torch.isnan(e_i)
+
+        if check_e_i.sum() > 0 :
+            print("NaN is e_i")
+
         s_new = s_i + e_i
 
         return s_new, c_new
+
 
 
     def process_fusion(self, q, mm):
@@ -63,6 +92,3 @@ class iteregCell(nn.Module):
         mm = self.fusion_module([q, mm])
         mm = mm.view(bsize, n_regions, -1)
         return mm
-
-
-

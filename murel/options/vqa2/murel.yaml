@@ -37,7 +37,7 @@ model:
       fusion:
         type: block
         input_dims: [4800, 2048]
-        output_dim: 2048
+        output_dim: 1024
         mm_dim: 1000
         chunks: 20
         rank: 15

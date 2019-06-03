@@ -16,21 +16,20 @@ from .murel_cell import MuRelCell
 from .itereg_cell import iteregCell
 
 
-
 class iteReGNet(nn.Module):
 
     def __init__(self,
-            txt_enc={},
-            self_q_att=False,
-            n_step=3,
-            shared=False,
-            cell={},
-            agg={},
-            classif={},
-            wid_to_word={},
-            word_to_wid={},
-            aid_to_ans=[],
-            ans_to_aid={}):
+                 txt_enc={},
+                 self_q_att=False,
+                 n_step=3,
+                 shared=False,
+                 cell={},
+                 agg={},
+                 classif={},
+                 wid_to_word={},
+                 word_to_wid={},
+                 aid_to_ans=[],
+                 ans_to_aid={}):
         super(iteReGNet, self).__init__()
         self.self_q_att = self_q_att
         self.n_step = n_step
@@ -59,7 +58,6 @@ class iteReGNet(nn.Module):
         else:
             self.cells = nn.ModuleList([iteregCell(**cell) for i in range(self.n_step)])
 
-
         if 'fusion' in self.classif:
             self.classif_module = block.factory_fusion(self.classif['fusion'])
         elif 'mlp' in self.classif:
@@ -68,12 +66,16 @@ class iteReGNet(nn.Module):
             raise ValueError(self.classif.keys())
 
         Logger().log_value('nparams',
-            sum(p.numel() for p in self.parameters() if p.requires_grad),
-            should_print=True)
+                           sum(p.numel() for p in self.parameters() if p.requires_grad),
+                           should_print=True)
 
         Logger().log_value('nparams_txt_enc',
-            self.get_nparams_txt_enc(),
-            should_print=True)
+                           self.get_nparams_txt_enc(),
+                           should_print=True)
+
+        for name, param in self.named_parameters():
+            if param.requires_grad:
+                print(name)
 
         self.buffer = None
 
@@ -106,6 +108,14 @@ class iteReGNet(nn.Module):
         l = batch['lengths'].data
         coord = batch['norm_coord']
 
+        # total_norm = 0
+        # for p in list(filter(lambda p: p.grad is not None, self.parameters())):
+        #     # print(p.grad.data.norm(2).item())
+        #     param_norm = p.grad.data.norm(2)
+        #     total_norm += param_norm.item() ** 2
+        # total_norm = total_norm ** (1. / 2)
+        # print(total_norm)
+
         q = self.process_question(q, l)
 
         bsize = q.shape[0]
@@ -116,9 +126,26 @@ class iteReGNet(nn.Module):
         c_exp = self.c_zero.repeat(bsize, 1)
         for i in range(self.n_step):
             cell = self.cell if self.shared else self.cells[i]
+            mm_nan = torch.isnan(mm)
+            c_exp_nan = torch.isnan(c_exp)
+            coord_nan = torch.isnan(coord)
+            q_nan = torch.isnan(q)
+            if q_nan.sum() > 0:
+                print(q)
+                print("q is nan")
+            if mm_nan.sum() > 0:
+                print(mm)
+                print("mm is nan")
+            if c_exp_nan.sum() > 0:
+                print(c_exp)
+                print("c_exp_nan is nan")
+            if coord_nan.sum() > 0:
+                print(coord)
+                print("coord_nan is nan")
+
             mm, c_exp = cell(q, mm, c_exp, coord)
 
-            if self.buffer is not None: # for visualization
+            if self.buffer is not None:  # for visualization
                 self.buffer[i] = deepcopy(cell.pairwise.buffer)
 
         if self.agg['type'] == 'max':
@@ -143,14 +170,14 @@ class iteReGNet(nn.Module):
             q_att = F.relu(q_att)
             q_att = self.q_att_linear1(q_att)
             q_att = mask_softmax(q_att, l)
-            #self.q_att_coeffs = q_att
+            # self.q_att_coeffs = q_att
             if q_att.size(2) > 1:
                 q_atts = torch.unbind(q_att, dim=2)
                 q_outs = []
                 for q_att in q_atts:
                     q_att = q_att.unsqueeze(2)
                     q_att = q_att.expand_as(q)
-                    q_out = q_att*q
+                    q_out = q_att * q
                     q_out = q_out.sum(1)
                     q_outs.append(q_out)
                 q = torch.cat(q_outs, dim=1)
@@ -162,7 +189,7 @@ class iteReGNet(nn.Module):
             # l contains the number of words for each question
             # in case of multi-gpus it must be a Tensor
             # thus we convert it into a list during the forward pass
-            l = list(l.data[:,0])
+            l = list(l.data[:, 0])
             q = self.txt_enc._select_last(q, l)
 
         return q
@@ -174,3 +201,4 @@ class iteReGNet(nn.Module):
         out['answers'] = [self.aid_to_ans[pred[i]] for i in range(batch_size)]
         out['answer_ids'] = [pred[i] for i in range(batch_size)]
         return out
+

@@ -25,13 +25,13 @@ class GraphModule(Module):
         # Embedding layers
         self.edge_layer_1 = nn.Linear(in_feature_dim,
                                       combined_feature_dim)
-        self.edge_layer_2 = nn.Linear(combined_feature_dim,
-                                      combined_feature_dim)
+        #self.edge_layer_2 = nn.Linear(combined_feature_dim,
+        #                              combined_feature_dim)
 
-        # Regularisation
+        # Regularization
         self.dropout = nn.Dropout(p=dropout)
         self.edge_layer_1 = nn.utils.weight_norm(self.edge_layer_1)
-        self.edge_layer_2 = nn.utils.weight_norm(self.edge_layer_2)
+        #self.edge_layer_2 = nn.utils.weight_norm(self.edge_layer_2)
 
     def forward(self, mm_new, ci):
         '''
@@ -49,21 +49,22 @@ class GraphModule(Module):
 
         mm_new = mm_new.view(-1, mm_new.shape[2])
 
-        c_uns = ci.unsqueeze(dim=1)
-        c_expand = c_uns.expand(bsize, n_regions, c_uns.shape[2])
-        c_expand = c_expand.contiguous().view(-1, c_expand.shape[2])
+        #c_uns = ci.unsqueeze(dim=1)
+        #c_expand = c_uns.expand(bsize, n_regions, c_uns.shape[2])
+        #c_expand = c_expand.contiguous().view(-1, c_expand.shape[2])
 
-        graph_nodes = torch.cat((mm_new, c_expand), dim=1)
+        #graph_nodes = torch.cat((mm_new, c_expand), dim=1)
 
         # graph_nodes = image_qenc_cat.view(-1, self.in_dim)
+        graph_nodes = mm_new
 
         # layer 1
         h = self.edge_layer_1(graph_nodes)
         h = F.relu(h)
 
         # layer 2
-        h = self.edge_layer_2(h)
-        h = F.relu(h)
+        #h = self.edge_layer_2(h)
+        #h = F.relu(h)
 
         # outer product
         h = h.view(-1, self.K, self.combined_dim)
